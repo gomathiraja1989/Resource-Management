@@ -61,15 +61,6 @@ Visualization & Dashboard App (Streamlit + Plotly)
    ↓
 Result Analysis, Reporting & Presentation
 ```
-
-Alternatively, in stepwise markdown:
-1. Data ingestion (CSV files)
-2. Data merging/cleaning
-3. EDA and visualization
-4. Feature engineering, NLP groupings
-5. Dashboard development (Streamlit)
-6. Results analysis and presentation (PPT/demo video)
-
 ---
 
 ## Exploratory Data Analysis (EDA) Insights
@@ -101,14 +92,6 @@ The project's results are delivered through an interactive dashboard built with 
 **Usage:**
 - Launch the app with `streamlit run app/dashboard.py` (see full usage below).
 - Adjust filters in the sidebar to focus on specific sectors, regions, or worker categories.
-
-
-## Demo and Presentation
-
-- [Demo Video](#) _(Link will be updated post-project completion)_
-- [PowerPoint Presentation](#) _(Link will be updated post-project completion)_
-- [LinkedIn Post](#) _(Link will be updated after sharing the project)_
-
 ---
 
 ## Installation and Usage
@@ -117,8 +100,8 @@ The repository is designed for easy setup and local execution. Follow these step
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/yourusername/industrial-human-resource-geo-visualization.git
-cd industrial-human-resource-geo-visualization
+git clone https://github.com/gomathiraja1989/Resource-Management.git
+cd Resource-Management
 ```
 
 ### 2. Install Dependencies
@@ -161,4 +144,5 @@ The dataset contains state-wise counts of industrial classification for main and
   - State/Region
   - Category of worker (Main/Marginal, Male/Female)
   - Industry/Section/Division/Class (e.g., manufacturing, construction, retail, furniture, plastics, chemicals, etc.)
+
   - Worker population counts per industry sector per geographic region
