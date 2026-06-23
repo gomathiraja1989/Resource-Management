@@ -61,6 +61,15 @@ Visualization & Dashboard App (Streamlit + Plotly)
    ↓
 Result Analysis, Reporting & Presentation
 ```
+
+Alternatively, in stepwise markdown:
+1. Data ingestion (CSV files)
+2. Data merging/cleaning
+3. EDA and visualization
+4. Feature engineering, NLP groupings
+5. Dashboard development (Streamlit)
+6. Results analysis and presentation (PPT/demo video)
+
 ---
 
 ## Exploratory Data Analysis (EDA) Insights
@@ -92,7 +101,7 @@ The project's results are delivered through an interactive dashboard built with 
 **Usage:**
 - Launch the app with `streamlit run app/dashboard.py` (see full usage below).
 - Adjust filters in the sidebar to focus on specific sectors, regions, or worker categories.
----
+
 
 ## Installation and Usage
 
@@ -100,8 +109,8 @@ The repository is designed for easy setup and local execution. Follow these step
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/gomathiraja1989/Resource-Management.git
-cd Resource-Management
+git clone https://github.com/username/resource_management.git
+cd resource_management
 ```
 
 ### 2. Install Dependencies
@@ -140,9 +149,8 @@ streamlit run app/dashboard.py
 
 The dataset contains state-wise counts of industrial classification for main and marginal workers of males and females employed in various industrial activities (excluding cultivators and agricultural laborers) across India.
 
-- **Key Features:**
+- **Key Features:**`
   - State/Region
   - Category of worker (Main/Marginal, Male/Female)
   - Industry/Section/Division/Class (e.g., manufacturing, construction, retail, furniture, plastics, chemicals, etc.)
-
   - Worker population counts per industry sector per geographic region
