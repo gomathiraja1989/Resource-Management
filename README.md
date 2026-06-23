@@ -109,8 +109,8 @@ The repository is designed for easy setup and local execution. Follow these step
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/username/resource_management.git
-cd resource_management
+git clone https://github.com/gomathiraja1989/Resource-Management.git
+cd Resource-Management
 ```
 
 ### 2. Install Dependencies
