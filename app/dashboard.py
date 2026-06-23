@@ -67,7 +67,7 @@ def main():
     # Add a note about data source
     st.sidebar.markdown("---")
     st.sidebar.info(
-        "Data Source: Census 2011 - Worker Population by Main and Marginal Workers, State: ARUNACHAL PRADESH"
+        "Data Source: Census 2011 - Worker Population by Main and Marginal Workers"
     )
 
     # Load data
@@ -93,6 +93,16 @@ def main():
     else:
         st.warning("No state information found in the data.")
 
+    # District filter
+    districts = sorted([str(d) for d in merged_df['district_code'].unique()]) if 'district_code' in merged_df.columns else []
+    selected_districts = None
+    if districts:
+        selected_districts = st.sidebar.multiselect(
+            "Select Districts (by code)",
+            districts,
+            default=None
+        )
+
     # Worker type filter
     worker_type = st.sidebar.selectbox(
         "Worker Type",
@@ -106,6 +116,25 @@ def main():
         ["All", "Male", "Female"],
         index=0  # Default to "All"
     )
+    
+    # Location filter (Rural/Urban)
+    location = st.sidebar.selectbox(
+        "Location",
+        ["All Locations", "Rural", "Urban"],
+        index=0  # Default to "All Locations"
+    )
+    
+    # NIC Name (Industry Sector) filter
+    nic_names = sorted([str(n) for n in merged_df['nic_name'].unique()]) if 'nic_name' in merged_df.columns else []
+    selected_nic = None
+    if nic_names:
+        selected_nic = st.sidebar.selectbox(
+            "Industry Sector",
+            ["All"] + nic_names,
+            index=0
+        )
+        if selected_nic == "All":
+            selected_nic = None
 
     # Apply filters
     filtered_df = merged_df.copy()
@@ -117,36 +146,100 @@ def main():
 
     if states and selected_states:
         filtered_df = filtered_df[filtered_df['state'].isin(selected_states)]
-
-    # Determine which columns to use based on filters
+    
+    # Apply District filter
+    if selected_districts and 'district_code' in filtered_df.columns:
+        filtered_df = filtered_df[filtered_df['district_code'].isin(selected_districts)]
+    
+    # Apply NIC Name filter
+    if selected_nic and 'nic_name' in filtered_df.columns:
+        filtered_df = filtered_df[filtered_df['nic_name'] == selected_nic]
+    
+    # Calculate derived rural/urban total columns if needed
+    if location == "Rural":
+        if 'main_workers_rural_male' in filtered_df.columns and 'marginal_workers_rural_male' in filtered_df.columns:
+            filtered_df['total_workers_rural_male'] = filtered_df['main_workers_rural_male'] + filtered_df['marginal_workers_rural_male']
+        if 'main_workers_rural_female' in filtered_df.columns and 'marginal_workers_rural_female' in filtered_df.columns:
+            filtered_df['total_workers_rural_female'] = filtered_df['main_workers_rural_female'] + filtered_df['marginal_workers_rural_female']
+    elif location == "Urban":
+        if 'main_workers_urban_male' in filtered_df.columns and 'marginal_workers_urban_male' in filtered_df.columns:
+            filtered_df['total_workers_urban_male'] = filtered_df['main_workers_urban_male'] + filtered_df['marginal_workers_urban_male']
+        if 'main_workers_urban_female' in filtered_df.columns and 'marginal_workers_urban_female' in filtered_df.columns:
+            filtered_df['total_workers_urban_female'] = filtered_df['main_workers_urban_female'] + filtered_df['marginal_workers_urban_female']
+    
+# Determine which columns to use based on filters
     value_col = None
     if worker_type == "Main Workers":
-        base_col = 'main_workers_total'
-        if gender == "Male" and 'main_workers_male' in filtered_df.columns:
-            value_col = 'main_workers_male'
-        elif gender == "Female" and 'main_workers_female' in filtered_df.columns:
-            value_col = 'main_workers_female'
-        elif 'main_workers_total' in filtered_df.columns:
-            value_col = 'main_workers_total'
-        
+        if location == "Rural":
+            if gender == "Male" and 'main_workers_rural_male' in filtered_df.columns:
+                value_col = 'main_workers_rural_male'
+            elif gender == "Female" and 'main_workers_rural_female' in filtered_df.columns:
+                value_col = 'main_workers_rural_female'
+            elif 'main_workers_rural_persons' in filtered_df.columns:
+                value_col = 'main_workers_rural_persons'
+        elif location == "Urban":
+            if gender == "Male" and 'main_workers_urban_male' in filtered_df.columns:
+                value_col = 'main_workers_urban_male'
+            elif gender == "Female" and 'main_workers_urban_female' in filtered_df.columns:
+                value_col = 'main_workers_urban_female'
+            elif 'main_workers_urban_persons' in filtered_df.columns:
+                value_col = 'main_workers_urban_persons'
+        else:  # All Locations
+            if gender == "Male" and 'main_workers_male' in filtered_df.columns:
+                value_col = 'main_workers_male'
+            elif gender == "Female" and 'main_workers_female' in filtered_df.columns:
+                value_col = 'main_workers_female'
+            elif 'main_workers_total' in filtered_df.columns:
+                value_col = 'main_workers_total'
+    
     elif worker_type == "Marginal Workers":
-        base_col = 'marginal_workers_total'
-        if gender == "Male" and 'marginal_workers_male' in filtered_df.columns:
-            value_col = 'marginal_workers_male'
-        elif gender == "Female" and 'marginal_workers_female' in filtered_df.columns:
-            value_col = 'marginal_workers_female'
-        elif 'marginal_workers_total' in filtered_df.columns:
-            value_col = 'marginal_workers_total'
-        
+        if location == "Rural":
+            if gender == "Male" and 'marginal_workers_rural_male' in filtered_df.columns:
+                value_col = 'marginal_workers_rural_male'
+            elif gender == "Female" and 'marginal_workers_rural_female' in filtered_df.columns:
+                value_col = 'marginal_workers_rural_female'
+            elif 'marginal_workers_rural_persons' in filtered_df.columns:
+                value_col = 'marginal_workers_rural_persons'
+        elif location == "Urban":
+            if gender == "Male" and 'marginal_workers_urban_male' in filtered_df.columns:
+                value_col = 'marginal_workers_urban_male'
+            elif gender == "Female" and 'marginal_workers_urban_female' in filtered_df.columns:
+                value_col = 'marginal_workers_urban_female'
+            elif 'marginal_workers_urban_persons' in filtered_df.columns:
+                value_col = 'marginal_workers_urban_persons'
+        else:  # All Locations
+            if gender == "Male" and 'marginal_workers_male' in filtered_df.columns:
+                value_col = 'marginal_workers_male'
+            elif gender == "Female" and 'marginal_workers_female' in filtered_df.columns:
+                value_col = 'marginal_workers_female'
+            elif 'marginal_workers_total' in filtered_df.columns:
+                value_col = 'marginal_workers_total'
+    
     else:  # All Workers
-        base_col = 'total_workers'
-        if gender == "Male" and 'total_workers_male' in filtered_df.columns:
-            value_col = 'total_workers_male'
-        elif gender == "Female" and 'total_workers_female' in filtered_df.columns:
-            value_col = 'total_workers_female'
-        elif 'total_workers' in filtered_df.columns:
-            value_col = 'total_workers'
-
+        if location == "Rural":
+            if gender == "Male" and 'total_workers_rural_male' in filtered_df.columns:
+                value_col = 'total_workers_rural_male'
+            elif gender == "Female" and 'total_workers_rural_female' in filtered_df.columns:
+                value_col = 'total_workers_rural_female'
+            elif 'main_workers_rural_persons' in filtered_df.columns and 'marginal_workers_rural_persons' in filtered_df.columns:
+                filtered_df['total_workers_rural_persons'] = filtered_df['main_workers_rural_persons'] + filtered_df['marginal_workers_rural_persons']
+                value_col = 'total_workers_rural_persons'
+        elif location == "Urban":
+            if gender == "Male" and 'total_workers_urban_male' in filtered_df.columns:
+                value_col = 'total_workers_urban_male'
+            elif gender == "Female" and 'total_workers_urban_female' in filtered_df.columns:
+                value_col = 'total_workers_urban_female'
+            elif 'main_workers_urban_persons' in filtered_df.columns and 'marginal_workers_urban_persons' in filtered_df.columns:
+                filtered_df['total_workers_urban_persons'] = filtered_df['main_workers_urban_persons'] + filtered_df['marginal_workers_urban_persons']
+                value_col = 'total_workers_urban_persons'
+        else:  # All Locations
+            if gender == "Male" and 'total_workers_male' in filtered_df.columns:
+                value_col = 'total_workers_male'
+            elif gender == "Female" and 'total_workers_female' in filtered_df.columns:
+                value_col = 'total_workers_female'
+            elif 'total_workers' in filtered_df.columns:
+                value_col = 'total_workers'
+    
     # Display the map
     st.subheader("Geographical Distribution")
 

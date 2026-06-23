@@ -124,11 +124,78 @@ class DataLoader:
                 
                 # Clean and standardize the data
                 df = clean_column_names(df)
-                df = self.standardize_columns(df)
                 
-                # Add state column if not present
-                if 'state' not in df.columns:
+                # Rename columns to standard names
+                column_mapping = {
+                    'main_workers_total_persons': 'main_workers_total',
+                    'main_workers_total_males': 'main_workers_male',
+                    'main_workers_total_females': 'main_workers_female',
+                    'marginal_workers_total_persons': 'marginal_workers_total',
+                    'marginal_workers_total_males': 'marginal_workers_male',
+                    'marginal_workers_total_females': 'marginal_workers_female',
+                    'nic_name': 'nic_name',
+                    'group': 'group',
+                    'class': 'class',
+                    'division': 'division',
+                    'district_code': 'district_code',
+                }
+                
+                # Rural/Urban column mappings
+                rural_urban_mapping = {
+                    'main_workers_rural_persons': 'main_workers_rural_persons',
+                    'main_workers_rural_males': 'main_workers_rural_male',
+                    'main_workers_rural_females': 'main_workers_rural_female',
+                    'main_workers_urban_persons': 'main_workers_urban_persons',
+                    'main_workers_urban_males': 'main_workers_urban_male',
+                    'main_workers_urban_females': 'main_workers_urban_female',
+                    'marginal_workers_rural_persons': 'marginal_workers_rural_persons',
+                    'marginal_workers_rural_males': 'marginal_workers_rural_male',
+                    'marginal_workers_rural_females': 'marginal_workers_rural_female',
+                    'marginal_workers_urban_persons': 'marginal_workers_urban_persons',
+                    'marginal_workers_urban_males': 'marginal_workers_urban_male',
+                    'marginal_workers_urban_females': 'marginal_workers_urban_female',
+                }
+                column_mapping.update(rural_urban_mapping)
+                
+                df = df.rename(columns={k: v for k, v in column_mapping.items() if k in df.columns})
+                
+                # Extract state from indiastates column or use state_name from filename
+                if 'indiastates' in df.columns:
+                    # Extract just the state name from values like "STATE - RAJASTHAN" or "Union Territory - ..."
+                    df['state'] = df['indiastates'].astype(str).str.extract(r'(?:STATE|Union Territory)\s*-\s*(.+)', expand=False)
+                    # Forward fill and backward fill to propagate state name to all rows
+                    df['state'] = df['state'].ffill().bfill()
+                    # Fallback: use the state_name derived from filename
+                    if df['state'].isna().iloc[0] if len(df) > 0 else True:
+                        df['state'] = state_name
+                else:
                     df['state'] = state_name
+                
+                df['state'] = df['state'].astype(str).str.strip().str.upper()
+                df['state'] = df['state'].str.replace(r'\(.*\)', '', regex=True).str.strip()
+                
+                # Convert numeric columns to appropriate types
+                numeric_cols = [
+                    'main_workers_total', 'main_workers_male', 'main_workers_female',
+                    'marginal_workers_total', 'marginal_workers_male', 'marginal_workers_female',
+                    'main_workers_rural_persons', 'main_workers_rural_male', 'main_workers_rural_female',
+                    'main_workers_urban_persons', 'main_workers_urban_male', 'main_workers_urban_female',
+                    'marginal_workers_rural_persons', 'marginal_workers_rural_male', 'marginal_workers_rural_female',
+                    'marginal_workers_urban_persons', 'marginal_workers_urban_male', 'marginal_workers_urban_female'
+                ]
+                
+                for col in numeric_cols:
+                    if col in df.columns:
+                        df[col] = pd.to_numeric(df[col].astype(str).str.replace('[^\d.]', '', regex=True), errors='coerce')
+                        df[col] = df[col].fillna(0).astype(int)
+                
+                # Calculate derived columns
+                if 'main_workers_total' in df.columns and 'marginal_workers_total' in df.columns:
+                    df['total_workers'] = df['main_workers_total'] + df['marginal_workers_total']
+                if 'main_workers_male' in df.columns and 'marginal_workers_male' in df.columns:
+                    df['total_workers_male'] = df['main_workers_male'] + df['marginal_workers_male']
+                if 'main_workers_female' in df.columns and 'marginal_workers_female' in df.columns:
+                    df['total_workers_female'] = df['main_workers_female'] + df['marginal_workers_female']
                 
                 # Store the data
                 self.data[state_name] = df
@@ -148,8 +215,14 @@ class DataLoader:
         if df is None or df.empty:
             return df
             
-        # First, clean up the column names
-        df.columns = [col.strip().lower().replace(' ', '_') for col in df.columns]
+        # Clean and standardize column names (same as clean_column_names but inline)
+        df.columns = (
+            df.columns.astype(str)
+            .str.strip()
+            .str.lower()
+            .str.replace(r'[^\w\s]', '', regex=True)
+            .str.replace(r'\s+', '_', regex=True)
+        )
         
         # Create a mapping of actual column names to standard names
         column_mapping = {
@@ -160,9 +233,31 @@ class DataLoader:
             'marginal_workers_total_males': 'marginal_workers_male',
             'marginal_workers_total_females': 'marginal_workers_female',
             'state': 'state',
-            'indiastates': 'state',  # Some files use 'India/States' as the state column
-            'nic_name_industry_sector_industry_name_sector_name_nic_name': 'nic_name'
+            'indiastates': 'state',
+            'nic_name_industry_sector_industry_name_sector_name_nic_name': 'nic_name',
+            'group': 'group',
+            'class': 'class',
+            'division': 'division',
+            'district_code': 'district_code',
         }
+        
+        # Rural/Urban column mappings
+        rural_urban_mapping = {
+            'main_workers_rural_persons': 'main_workers_rural_persons',
+            'main_workers_rural_males': 'main_workers_rural_male',
+            'main_workers_rural_females': 'main_workers_rural_female',
+            'main_workers_urban_persons': 'main_workers_urban_persons',
+            'main_workers_urban_males': 'main_workers_urban_male',
+            'main_workers_urban_females': 'main_workers_urban_female',
+            'marginal_workers_rural_persons': 'marginal_workers_rural_persons',
+            'marginal_workers_rural_males': 'marginal_workers_rural_male',
+            'marginal_workers_rural_females': 'marginal_workers_rural_female',
+            'marginal_workers_urban_persons': 'marginal_workers_urban_persons',
+            'marginal_workers_urban_males': 'marginal_workers_urban_male',
+            'marginal_workers_urban_females': 'marginal_workers_urban_female',
+        }
+        
+        column_mapping.update(rural_urban_mapping)
         
         # Apply the renaming
         df = df.rename(columns={k: v for k, v in column_mapping.items() if k in df.columns})
@@ -187,7 +282,11 @@ class DataLoader:
         numeric_cols = [
             'main_workers_total', 'main_workers_male', 'main_workers_female',
             'marginal_workers_total', 'marginal_workers_male', 'marginal_workers_female',
-            'total_workers', 'total_workers_male', 'total_workers_female'
+            'total_workers', 'total_workers_male', 'total_workers_female',
+            'main_workers_rural_persons', 'main_workers_rural_male', 'main_workers_rural_female',
+            'main_workers_urban_persons', 'main_workers_urban_male', 'main_workers_urban_female',
+            'marginal_workers_rural_persons', 'marginal_workers_rural_male', 'marginal_workers_rural_female',
+            'marginal_workers_urban_persons', 'marginal_workers_urban_male', 'marginal_workers_urban_female'
         ]
         
         for col in numeric_cols:
@@ -268,6 +367,10 @@ def preprocess_data(df: pd.DataFrame) -> pd.DataFrame:
         'main_workers_total', 'main_workers_male', 'main_workers_female',
         'marginal_workers_total', 'marginal_workers_male', 'marginal_workers_female',
         'total_workers', 'total_workers_male', 'total_workers_female',
+        'main_workers_rural_persons', 'main_workers_rural_male', 'main_workers_rural_female',
+        'main_workers_urban_persons', 'main_workers_urban_male', 'main_workers_urban_female',
+        'marginal_workers_rural_persons', 'marginal_workers_rural_male', 'marginal_workers_rural_female',
+        'marginal_workers_urban_persons', 'marginal_workers_urban_male', 'marginal_workers_urban_female',
         'persons', 'males', 'females', 'workers', 'non_workers'
     ]
     
